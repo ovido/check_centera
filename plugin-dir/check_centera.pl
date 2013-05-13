@@ -247,20 +247,26 @@ parse_options();
 # What do we want to check?
 # Node status
 if (defined $o_node){
-  my $output = check_node_status();
+  my $output = check_status("node");
+  exit_plugin($statuscode,$output);
+}
+if (defined $o_network){
+  my $output = check_status("network");
   exit_plugin($statuscode,$output);
 }
 
 
 #***************************************************#
-#  Function: check_node_status                      #
+#  Function: check_status                           #
 #---------------------------------------------------#
-#  Check status of nodes.                           #
+#  Check status of nodes and networks.              #
+#  ARG1: component (node, network)                  #
 #                                                   #
 #***************************************************#
 
-sub check_node_status{
-	
+sub check_status{
+
+  my $component = $_[0];	
   my $output = "";
   
   # call CenteraViewer.jar binary
@@ -272,30 +278,46 @@ sub check_node_status{
   	next unless $return[$i] =~ m/^[0-9]/;
   	$return[$i] =~ s/\s+/ /g;
   	#print $return[$i] . "\n";
-  	# example output
+  	# example output (Nodes)
   	# 2        c002n01 A,M,R,S         g4LP                    ATS   on                eth2:connected
     # 2        c002n05 M,S             g4LP                    ATS   on                eth2:connected
     # 2        c002n07 S               g4LP                    ATS   on
+    # example output (Network)
+    # 2        c002sw0   1     on
+    # 2        c002sw1   0     on
 
   	# get statistics
   	my @tmp = split / /, $return[$i];
-  	# get status
-  	if ($tmp[5] ne "on"){
-  	  $output .= "Node $tmp[1] is $tmp[5], ";
-  	  $statuscode = "critical";	
-  	}
-  	# get failures
-  	if ( ($tmp[2] =~ m/A/) || ($tmp[2] =~ m/M/) ){
-  	  if ($tmp[6] !~ m/\:connected$/){
-  	  	print "Size: $#tmp\n";
-  	  	$output .= "Node $tmp[1] failures $tmp[6], ";
-  	  	$statuscode = "critical";
+  	
+  	if ($component eq "node"){
+  	  # get host status
+  	  if ($tmp[5] ne "on"){
+  	    $output .= "Node $tmp[1] is $tmp[5], ";
+  	    $statuscode = "critical";	
   	  }
+  	  # get failures
+  	  if ( ($tmp[2] =~ m/A/) || ($tmp[2] =~ m/M/) ){
+  	  	my $size = scalar @tmp - 6;
+  	    if ($tmp[$#tmp] !~ m/\:connected$/){
+  	  	  $output .= "Node $tmp[1] failures ";
+  	  	  for (my $x=6;$x<=$#tmp;$x++){
+  	  	  	$output .= $tmp[$x];
+  	  	  }
+  	  	  $output .= ", ";
+  	  	  $statuscode = "critical";
+  	    }
+  	  }
+  	}else{
+  	  # get network status
+  	  if ($tmp[3] ne "on"){
+  	  	$output .= "Switch $tmp[1] is $tmp[3], ";
+  	  	$statuscode = "critical";
+  	  }	
   	}
   }
   
   if ($output eq ""){
-  	$output = "All nodes in status on";
+    $output = "All " . $component . "s with status on";
   	$statuscode = "ok" if ($statuscode ne "warning" || $statuscode ne "critical");
   }else{
   	# remove trailing ", "
