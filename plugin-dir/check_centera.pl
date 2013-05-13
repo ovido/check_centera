@@ -52,6 +52,14 @@ my $projecturl  = "https://labs.ovido.at/monitoring/wiki/check_centera";
 my $o_verbose	= undef;	# verbosity
 my $o_help		= undef;	# help
 my $o_version	= undef;	# version
+my $o_hostname	= undef;	# hostname
+my $o_username	= undef;	# username
+my $o_password	= undef;	# password
+my $o_node		= undef;	# node status
+my $o_network	= undef;	# network status
+my $o_failures	= undef;	# node status failures
+my $o_available	= undef;	# capability availability
+my $o_repl		= undef;	# replication status
 my @o_warn	= ();		# warning
 my @o_crit	= ();		# critical
 my @o_type	= ();
@@ -73,18 +81,57 @@ my $perfstats	= "|";
 sub parse_options(){
   Getopt::Long::Configure ("bundling");
   GetOptions(
-	'v+'	=> \$o_verbose,		'verbose+'	=> \$o_verbose,
-	'h'		=> \$o_help,		'help'		=> \$o_help,
-	'V'		=> \$o_version,		'version'	=> \$o_version,
-	'w:s'	=> \@o_warn,		'warning:s'	=> \@o_warn,
-	'c:s'	=> \@o_crit,		'critical:s'	=> \@o_crit
+	'v+'	=> \$o_verbose,		'verbose+'		=> \$o_verbose,
+	'h'		=> \$o_help,		'help'			=> \$o_help,
+	'V'		=> \$o_version,		'version'		=> \$o_version,
+	'w:s'	=> \@o_warn,		'warning:s'		=> \@o_warn,
+	'c:s'	=> \@o_crit,		'critical:s'	=> \@o_crit,
+	'H:s'	=> \$o_hostname,	'hostname:s'	=> \$o_hostname,
+	'u:s'	=> \$o_username,	'username:s'	=> \$o_username,
+	'p:s'	=> \$o_password,	'password:s'	=> \$o_password,
+	'j:s'	=> \$o_java,		'java:s'		=> \$o_java,
+	'C:s'	=> \$o_cviewer,		'cviewer:s'		=> \$o_cviewer,
+	'N'		=> \$o_node,		'node'			=> \$o_node,
+	'S'		=> \$o_network,		'network'		=> \$o_network,
+	'F'		=> \$o_failures,	'failures'		=> \$o_failures,
+	'A'		=> \$o_available,	'available'		=> \$o_available,
+	'R'		=> \$o_repl,		'replication'	=> \$o_repl
   );
 
   # process options
   print_help()		if defined $o_help;
   print_version()	if defined $o_version;
 
-
+  if (! defined $o_hostname){
+  	print "Centera hostname is missing.\n";
+  	print_usage();
+  	exit $ERRORS{$status{'unknown'}};
+  }
+  
+  if ((! defined $o_node) && (! defined $o_network) && (! defined $o_failures) && (! defined $o_available) && (! defined $o_repl)){
+  	print "Missing component to check.\n";
+  	print_usage();
+  	exit $ERRORS{$status{'unknown'}}
+  }
+  
+  # java and CenteraViewer executable?
+  if (! -x $o_java){
+  	print "Java binary $o_java isn't executable.\n";
+  	print_usage();
+  	exit $ERRORS{$status{'unknown'}};
+  }
+  if (! -x $o_cviewer){
+  	print "CenteraViewer $o_cviewer isn't executable.\n";
+  	print_usage();
+  	exit $ERRORS{$status{'unknown'}};
+  }
+  
+  # username and password given?
+  if ((! defined $o_username) || (! defined $o_password)){
+  	print "Missing username or password.\n";
+  	print_usage();
+  	exit $ERRORS{$status{'unknown'}};
+  }
 
   # verbose handling
   $o_verbose = 0 if ! defined $o_verbose;
@@ -198,7 +245,3 @@ sub exit_plugin{
 
 
 exit $ERRORS{$status{'unknown'}};
-
-
-
-
