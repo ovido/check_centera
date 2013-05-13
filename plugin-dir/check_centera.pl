@@ -34,6 +34,7 @@
 
 use strict;
 use Getopt::Long;
+use Data::Dumper;
 
 # Configuration
 my $o_java		= "/usr/bin/java";
@@ -60,6 +61,7 @@ my $o_network	= undef;	# network status
 my $o_failures	= undef;	# node status failures
 my $o_available	= undef;	# capability availability
 my $o_repl		= undef;	# replication status
+my $o_script	= undef;	# expect script
 my @o_warn	= ();		# warning
 my @o_crit	= ();		# critical
 my @o_type	= ();
@@ -95,7 +97,8 @@ sub parse_options(){
 	'S'		=> \$o_network,		'network'		=> \$o_network,
 	'F'		=> \$o_failures,	'failures'		=> \$o_failures,
 	'A'		=> \$o_available,	'available'		=> \$o_available,
-	'R'		=> \$o_repl,		'replication'	=> \$o_repl
+	'R'		=> \$o_repl,		'replication'	=> \$o_repl,
+	's:s'	=> \$o_script,		'script:s'		=> \$o_script
   );
 
   # process options
@@ -132,6 +135,16 @@ sub parse_options(){
   	print_usage();
   	exit $ERRORS{$status{'unknown'}};
   }
+  if (! defined $o_script){
+  	print "Expect script missing.\n";
+  	print_usage();
+  	exit $ERRORS{$status{'unknown'}};
+  }
+  if (! -r $o_script){
+  	print "Expect script $o_script not readable.\n";
+  	print_usage();
+  	exit $ERRORS{$status{'unknown'}};
+  }
 
   # verbose handling
   $o_verbose = 0 if ! defined $o_verbose;
@@ -147,7 +160,7 @@ sub parse_options(){
 #***************************************************#
 sub print_usage(){
   print "Usage: $0 [-v] -H <hostname> -u <user> -p <password> [-j <java>] [-C <centera-viewer> \n";
-  print "        -N | -S | -F | -A | -R [-w <warning>] [-c <critical>]\n";
+  print "        -N | -S | -F | -A | -R [-w <warning>] [-c <critical>] -s <script>\n";
 }
 
 
@@ -188,6 +201,8 @@ Options:
     Check capability availability
  -R, --replication
     Check Replication status
+ -s, --script
+    Expect script for CenteraViewer
  -w, --warning=DOUBLE
     Value to result in warning status (ms)
  -c, --critical=DOUBLE
@@ -228,6 +243,90 @@ sub print_version{
 
 # parse command line options
 parse_options();
+
+# What do we want to check?
+# Node status
+if (defined $o_node){
+  my $output = check_node_status();
+  exit_plugin($statuscode,$output);
+}
+
+
+#***************************************************#
+#  Function: check_node_status                      #
+#---------------------------------------------------#
+#  Check status of nodes.                           #
+#                                                   #
+#***************************************************#
+
+sub check_node_status{
+	
+  my $output = "";
+  
+  # call CenteraViewer.jar binary
+  my $rref = exec_centeraviewer(); 
+  my @return = @{ $rref };
+
+  for (my $i=0;$i<=$#return;$i++){
+  	# skip all lines except lines startig with cabinet number
+  	next unless $return[$i] =~ m/^[0-9]/;
+  	$return[$i] =~ s/\s+/ /g;
+  	#print $return[$i] . "\n";
+  	# example output
+  	# 2        c002n01 A,M,R,S         g4LP                    ATS   on                eth2:connected
+    # 2        c002n05 M,S             g4LP                    ATS   on                eth2:connected
+    # 2        c002n07 S               g4LP                    ATS   on
+
+  	# get statistics
+  	my @tmp = split / /, $return[$i];
+  	# get status
+  	if ($tmp[5] ne "on"){
+  	  $output .= "Node $tmp[1] is $tmp[5], ";
+  	  $statuscode = "critical";	
+  	}
+  	# get failures
+  	if ( ($tmp[2] =~ m/A/) || ($tmp[2] =~ m/M/) ){
+  	  if ($tmp[6] !~ m/\:connected$/){
+  	  	print "Size: $#tmp\n";
+  	  	$output .= "Node $tmp[1] failures $tmp[6], ";
+  	  	$statuscode = "critical";
+  	  }
+  	}
+  }
+  
+  if ($output eq ""){
+  	$output = "All nodes in status on";
+  	$statuscode = "ok" if ($statuscode ne "warning" || $statuscode ne "critical");
+  }else{
+  	# remove trailing ", "
+  	chop $output;
+  	chop $output;
+  }
+  
+  return $output;
+  
+}
+
+
+#***************************************************#
+#  Function: exec_centeraviewer                     #
+#---------------------------------------------------#
+#  Execute CenteraViewer binary and return output.  #
+#                                                   #
+#***************************************************#
+
+sub exec_centeraviewer{
+  my @result;
+#  open (CVIEWER, "$o_java -cp $o_cviewer com.filepool.remote.cli.CLI -u $o_username -p $o_password -ip $o_hostname -script $o_script |");
+# use fake binary for testing
+  open (CVIEWER, "cat $o_script | /usr/local/bin/CenteraViewer.jar |");
+  while (<CVIEWER>){
+  	chomp $_;
+  	push @result, $_;
+  }
+  close CVIEWER;
+  return \@result;
+}
 
 
 #***************************************************#
