@@ -22,6 +22,8 @@ AC_PREFIX_DEFAULT(/usr/local/nagios/libexec)
 PKG_NAME="check_centera"
 PKG_VERSION="0.1"
 PKG_REL_DATE="2013-05-14"
+AC_SUBST(PKG_NAME)
+AC_SUBST(PKG_VERSION)
 
 # Figure out how to invoke "install" and what install options to use
 AC_PROG_INSTALL
@@ -39,15 +41,17 @@ AC_ARG_WITH(nagios_user,AC_HELP_STRING([--with-nagios-user=<user>],[sets user na
 AC_ARG_WITH(nagios_group,AC_HELP_STRING([--with-nagios-group=<grp>],[sets group name to run Nagios]),nagios_group=$withval,nagios_group=nagios)
 AC_ARG_WITH(pnp_dir,AC_HELP_STRING([--with-pnp-dir=<dir>],[path to PNP share directory]),pnp_dir=$withval,pnp_dir=/usr/local/pnp4nagios/share)
 AC_ARG_ENABLE(pnp_template,AC_HELP_STRING([--enable-pnp-template],[install template for PNP4Nagios]),pnp_template=$enableval,pnp_template=yes)
+AC_ARG_WITH(doc_dir,AC_HELP_STRING([--with-doc-dir=<dir>],[path to DOC directory]),doc_dir=$withval,doc_dir=/usr/share/doc)
 AC_SUBST(nagios_user)
 AC_SUBST(nagios_group)
 AC_SUBST(pnp_dir)
 AC_SUBST(pnp_template)
+AC_SUBST(doc_dir)
 
 INSTALL_OPTS="-o $nagios_user -g $nagios_group"
 AC_SUBST(INSTALL_OPTS)
 
-AC_CONFIG_FILES([Makefile plugin-dir/Makefile contrib/Makefile])
+AC_CONFIG_FILES([Makefile plugin-dir/Makefile contrib/Makefile example-scripts/Makefile])
 AC_OUTPUT
 
 # Review options
@@ -63,6 +67,7 @@ AC_MSG_RESULT([              Nagios group: $nagios_group])
 AC_MSG_RESULT([         Plugins directory: $prefix])
 AC_MSG_RESULT([             PNP directory: $pnp_dir])
 AC_MSG_RESULT([      Install PNP template: $pnp_template])
+AC_MSG_RESULT([             DOC directory: $doc_dir])
 echo ""
 echo ""
 echo "Review the options above for accuray. If they look okay,"

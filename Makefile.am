@@ -14,6 +14,7 @@
 # directories
 SRC_PLUGIN=@srcdir@/plugin-dir
 SRC_CONTRIB=@srcdir@/contrib
+SRC_DOC=@srcdir@/example-scripts
 
 PACKAGE=@PACKAGE@
 VERSION=@VERSION@
@@ -22,7 +23,8 @@ distdir=$(PACKAGE)-$(VERSION)
 DIST_COMMON=config.sub configure.in configure NEWS INSTALL missing aclocal.m4 install-sh Makefile.am ChangeLog COPYING README AUTHORS Makefile.in config.guess
 PLUGIN_COMMON=$(SRC_PLUGIN)/Makefile.am $(SRC_PLUGIN)/Makefile.in $(SRC_PLUGIN)/check_centera.pl
 CONTRIB_COMMON=$(SRC_CONTRIB)/Makefile.am $(SRC_CONTRIB)/Makefile.in $(SRC_CONTRIB)/check_centera.php
-DISTFILES=$(DIST_COMMON) $(PLUGIN_COMMON) $(CONTRIB_COMMON)
+DOC_COMMON=$(SRC_DOC)/Makefile.am $(SRC_DOC)/Makefile.in $(SRC_DOC)/centera*
+DISTFILES=$(DIST_COMMON) $(PLUGIN_COMMON) $(CONTRIB_COMMON) $(DOC_COMMON)
 
 # compiler settings
 prefix=@prefix@
@@ -33,13 +35,17 @@ INSTALL_OPTS=@INSTALL_OPTS@
 all:
 	cd $(SRC_PLUGIN) && $(MAKE) $@
 	cd $(SRC_CONTRIB) && $(MAKE) $@
+	cd $(SRC_DOC) && $(MAKE) $@
 
 # Install
 install:
 	cd $(SRC_PLUGIN) && $(MAKE) $@
 	cd $(SRC_CONTRIB) && $(MAKE) $@
+	cd $(SRC_DOC) && $(MAKE) $@
 
 # Cleanup
 clean:
 	cd $(SRC_PLUGIN) && $(MAKE) $@
 	cd $(SRC_CONTRIB) && $(MAKE) $@
+	cd $(SRC_DOC) && $(MAKE) $@
+	
