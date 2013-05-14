@@ -492,9 +492,9 @@ sub check_failures{
 
 sub exec_centeraviewer{
   my @result;
-#  open (CVIEWER, "$o_java -cp $o_cviewer com.filepool.remote.cli.CLI -u $o_username -p $o_password -ip $o_hostname -script $o_script |");
+  open (CVIEWER, "$o_java -cp $o_cviewer com.filepool.remote.cli.CLI -u $o_username -p $o_password -ip $o_hostname -script $o_script |");
 # use fake binary for testing
-  open (CVIEWER, "cat $o_script | /usr/local/bin/CenteraViewer.jar |");
+#  open (CVIEWER, "cat $o_script | /usr/local/bin/CenteraViewer.jar |");
   while (<CVIEWER>){
   	chomp $_;
   	push @result, $_;
