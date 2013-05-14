@@ -267,6 +267,12 @@ if (defined $o_available){
   exit_plugin($statuscode,$output);
 }
 
+# Replication check
+if (defined $o_repl){
+  my $output = check_repl();
+  exit_plugin($statuscode,$output);
+}
+
 
 #***************************************************#
 #  Function: check_status                           #
@@ -379,6 +385,53 @@ sub check_capacity{
   }
   return $output;	
 }
+
+
+#***************************************************#
+#  Function: check_repl                             #
+#---------------------------------------------------#
+#  Check replication status.                        #
+#                                                   #
+#***************************************************#
+
+sub check_repl{
+  my $output = "";	
+	 
+  # call CenteraViewer.jar binary
+  my $rref = exec_centeraviewer(); 
+  my @return = @{ $rref };
+
+  for (my $i=0;$i<=$#return;$i++){
+  	# skip all lines except line startig with Replication Enabled/Paused
+  	next unless $return[$i] =~ m/^Replication/;
+  	$return[$i] =~ s/\s+/ /g;
+  	#print $return[$i] . "\n";
+  	# example output
+    # Replication Enabled:                          Mittwoch, 25. Jänner 2006 16:33:41 MEZ
+    # Replication Paused:                           no
+
+  	# get statistics
+  	my @tmp = split / /, $return[$i];
+  	if ($tmp[1] eq "Enabled:"){
+  	  $output .= "Replication enabled on ";
+  	  for (my $x=2;$x<=$#tmp;$x++){
+  	  	$output .= $tmp[$x] . " ";
+  	  }
+  	  chop $output;
+  	  $output .= "; ";
+  	}elsif ($tmp[1] eq "Paused:"){
+  	  if ($tmp[2] ne "no"){
+  	  	$statuscode = "critical";
+  	  	$output .= "Replication paused ($tmp[2]).";
+  	  }else{
+  	    $statuscode = "ok";
+  	  }
+  	}
+  	
+  }
+  return $output;	
+}
+
 
 #***************************************************#
 #  Function: exec_centeraviewer                     #
