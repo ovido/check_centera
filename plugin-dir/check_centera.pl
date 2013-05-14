@@ -62,12 +62,12 @@ my $o_failures	= undef;	# node status failures
 my $o_available	= undef;	# capability availability
 my $o_repl		= undef;	# replication status
 my $o_script	= undef;	# expect script
-my @o_warn	= ();		# warning
-my @o_crit	= ();		# critical
-my @o_type	= ();
+my $o_warn		= 10;		# warning
+my $o_crit		= 5;		# critical
+my @o_type		= ();
 
-my %status	= ( ok => "OK", warning => "WARNING", critical => "CRITICAL", unknown => "UNKNOWN");
-my %ERRORS	= ( "OK" => 0, "WARNING" => 1, "CRITICAL" => 2, "UNKNOWN" => 3);
+my %status		= ( ok => "OK", warning => "WARNING", critical => "CRITICAL", unknown => "UNKNOWN");
+my %ERRORS		= ( "OK" => 0, "WARNING" => 1, "CRITICAL" => 2, "UNKNOWN" => 3);
 
 my $statuscode	= "unknown";
 my $statustext	= "";
@@ -86,8 +86,8 @@ sub parse_options(){
 	'v+'	=> \$o_verbose,		'verbose+'		=> \$o_verbose,
 	'h'		=> \$o_help,		'help'			=> \$o_help,
 	'V'		=> \$o_version,		'version'		=> \$o_version,
-	'w:s'	=> \@o_warn,		'warning:s'		=> \@o_warn,
-	'c:s'	=> \@o_crit,		'critical:s'	=> \@o_crit,
+	'w:s'	=> \$o_warn,		'warning:s'		=> \$o_warn,
+	'c:s'	=> \$o_crit,		'critical:s'	=> \$o_crit,
 	'H:s'	=> \$o_hostname,	'hostname:s'	=> \$o_hostname,
 	'u:s'	=> \$o_username,	'username:s'	=> \$o_username,
 	'p:s'	=> \$o_password,	'password:s'	=> \$o_password,
@@ -145,6 +145,10 @@ sub parse_options(){
   	print_usage();
   	exit $ERRORS{$status{'unknown'}};
   }
+  
+  # delete non-digit chars from warning and critical like %
+  $o_warn =~ s/\D//g;
+  $o_crit =~ s/\D//g;
 
   # verbose handling
   $o_verbose = 0 if ! defined $o_verbose;
@@ -250,8 +254,16 @@ if (defined $o_node){
   my $output = check_status("node");
   exit_plugin($statuscode,$output);
 }
+
+# Network status
 if (defined $o_network){
   my $output = check_status("network");
+  exit_plugin($statuscode,$output);
+}
+
+# Available capacity
+if (defined $o_available){
+  my $output = check_capacity();
   exit_plugin($statuscode,$output);
 }
 
@@ -329,6 +341,44 @@ sub check_status{
   
 }
 
+
+#***************************************************#
+#  Function: check_capacity                         #
+#---------------------------------------------------#
+#  Check available capacity.                        #
+#                                                   #
+#***************************************************#
+
+sub check_capacity{
+  my $output = "";
+  
+  # call CenteraViewer.jar binary
+  my $rref = exec_centeraviewer(); 
+  my @return = @{ $rref };
+
+  for (my $i=0;$i<=$#return;$i++){
+  	# skip all lines except line startig with System Buffer
+  	next unless $return[$i] =~ m/^System\s{1}Buffer:/;
+  	$return[$i] =~ s/\s+/ /g;
+  	#print $return[$i] . "\n";
+  	# example output
+    # Available Capacity:                     33 TB   (37%)
+
+  	# get statistics
+  	my @tmp = split / /, $return[$i];
+  	$tmp[4] =~ s/\D//g;
+	$output = "Available Capacity ($tmp[4]%)";
+  	if ($o_crit >= $tmp[4]){
+  	  $statuscode = "critical";
+  	}elsif ($o_warn >= $tmp[4]){
+  	  $statuscode = "warning";
+  	}else{
+  	  $statuscode = "ok";
+  	}
+  	
+  }
+  return $output;	
+}
 
 #***************************************************#
 #  Function: exec_centeraviewer                     #
