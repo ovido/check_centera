@@ -29,7 +29,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Changelog:
-# * 0.1.0 - Fri May 10 2013 - Rene Koch <r.koch@ovido.at>
+# * 0.1.0 - Tue May 14 2013 - Rene Koch <r.koch@ovido.at>
 # - This is the first public beta release of new plugin check_centera
 
 use strict;
@@ -48,7 +48,7 @@ my $perfdata	= 1;
 # Variables
 my $prog	= "check_centera";
 my $version	= "0.1";
-my $projecturl  = "https://labs.ovido.at/monitoring/wiki/check_centera";
+my $projecturl  = "https://github.com/ovido/check_centera";
 
 my $o_verbose	= undef;	# verbosity
 my $o_help		= undef;	# help
