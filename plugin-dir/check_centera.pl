@@ -149,6 +149,16 @@ sub parse_options(){
   # delete non-digit chars from warning and critical like %
   $o_warn =~ s/\D//g;
   $o_crit =~ s/\D//g;
+  if ($o_warn <= 0 || $o_warn >= 100){
+  	print "Warning value ($o_warn) must be between 0% and 100%.\n";
+  	print_usage();
+  	exit $ERRORS{$status{'unknown'}};
+  }
+  if ($o_crit <= 0 || $o_crit >= 100){
+  	print "Critical value ($o_crit) must be between 0% and 100%.\n";
+  	print_usage();
+  	exit $ERRORS{$status{'unknown'}};
+  }
 
   # verbose handling
   $o_verbose = 0 if ! defined $o_verbose;
@@ -374,6 +384,10 @@ sub check_capacity{
   	my @tmp = split / /, $return[$i];
   	$tmp[4] =~ s/\D//g;
 	$output = "Available Capacity ($tmp[4]%)";
+	# apped performance data
+	if ($perfdata == 1){
+	  $output .= "|'capacity'=$tmp[4]%;$o_warn;$o_crit;;"
+	}
   	if ($o_crit >= $tmp[4]){
   	  $statuscode = "critical";
   	}elsif ($o_warn >= $tmp[4]){
