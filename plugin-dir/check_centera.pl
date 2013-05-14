@@ -283,6 +283,12 @@ if (defined $o_repl){
   exit_plugin($statuscode,$output);
 }
 
+# Node failures
+if (defined $o_failures){
+  my $output = check_failures();
+  exit_plugin($statuscode,$output);
+}
+
 
 #***************************************************#
 #  Function: check_status                           #
@@ -442,6 +448,36 @@ sub check_repl{
   	  }
   	}
   	
+  }
+  return $output;	
+}
+
+
+#***************************************************#
+#  Function: check_failures                         #
+#---------------------------------------------------#
+#  Check node status failures.                      #
+#                                                   #
+#***************************************************#
+
+sub check_failures{
+  my $output = "";
+  
+  # call CenteraViewer.jar binary
+  my $rref = exec_centeraviewer(); 
+  my @return = @{ $rref };
+
+  for (my $i=0;$i<=$#return;$i++){
+  	if ($return[$i] eq "No node is found in the specified scope"){
+  	  # Node node failures
+  	  $statuscode = "ok";
+  	  $output = "No node failures found.";
+  	}
+  }
+  # Output of nodes with failures isn't known, yet
+  if ($statuscode ne "ok"){
+  	$statuscode = "critical";
+  	$output = "Node failures found.";
   }
   return $output;	
 }
